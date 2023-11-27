@@ -134,7 +134,7 @@ class FlutterTomtomNavigationView(
 
     init {
         this.context = context
-        println("Init navigation view with id $id")
+        log("Init navigation view with id $id")
 
         if (creationParams.isNullOrEmpty()) {
             throw IllegalArgumentException("No creation parameters provided to the FlutterTomtomNavigationView")
@@ -144,7 +144,8 @@ class FlutterTomtomNavigationView(
         val mapOptionsJson = creationParams["mapOptions"] as String
         val rawMapOptions =
             Gson().fromJson(mapOptionsJson, MapOptions::class.java)
-        println("${rawMapOptions.cameraOptions?.position}/${rawMapOptions.cameraOptions?.zoom} ($rawMapOptions)")
+        log("${rawMapOptions.cameraOptions?.position}/${rawMapOptions.cameraOptions?.zoom} ($rawMapOptions)")
+
         val mapOptions = rawMapOptions.copy(
             rawMapOptions.mapKey,
             cameraOptions = rawMapOptions.cameraOptions,
@@ -154,7 +155,8 @@ class FlutterTomtomNavigationView(
             onlineCachePolicy = OnlineCachePolicy.Default,
             renderToTexture = rawMapOptions.renderToTexture,
         )
-        println("Camera options is ${mapOptions.cameraOptions}")
+
+        log("Camera options is ${mapOptions.cameraOptions}")
         apiKey = mapOptions.mapKey
         val debug = creationParams["debug"] as Boolean
 
@@ -163,6 +165,8 @@ class FlutterTomtomNavigationView(
             creationParams["binaryMessenger"] as BinaryMessenger
         channel = MethodChannel(binaryMessenger, "flutter_tomtom_navigation")
         channel.setMethodCallHandler(this)
+
+        log("methodChanel handler has been setup")
 
         @Suppress("UNCHECKED_CAST")
         publish = creationParams["publish"] as (String) -> (Unit)
@@ -183,6 +187,8 @@ class FlutterTomtomNavigationView(
         }
         relativeLayout.addView(mapFragmentContainer)
 
+        log("Map fragment has been setup")
+
         // ...and the navigation view
         navigationFragment = NavigationFragment.newInstance(
             NavigationUiOptions()
@@ -197,6 +203,7 @@ class FlutterTomtomNavigationView(
         )
         navigationFragmentContainer.layoutParams = params
 
+        log("Navigation fragment has been setup")
         // Hide it by default
         navigationFragmentContainer.visibility = View.INVISIBLE
         navigationFragmentContainer.doOnAttach {
@@ -209,17 +216,29 @@ class FlutterTomtomNavigationView(
         initLocationProvider()
         initRouting()
         initNavigation()
-
-        mapFragment.getMapAsync {
-            tomTomMap = it
-            enableUserLocation()
-            if (debug) setUpMapListeners()
-            tomTomMap.loadStyle(
-                StandardStyles.VEHICLE_RESTRICTIONS,
-                styleLoadingCallback,
-            )
+        try {
+            log("getting map")
+                mapFragment.getMapAsync {
+                log("Map is ready")
+//                tomTomMap = it
+//                sendNavigationStatusUpdate(NavigationStatus.READY)
+//                enableUserLocation()
+//                if (debug) setUpMapListeners()
+//                tomTomMap.loadStyle(
+//                    StandardStyles.VEHICLE_RESTRICTIONS,
+//                    styleLoadingCallback,
+//                )
+            }
+            log("map loaded")
+        } catch (e: Exception) {
+            log("Getting the map fragment failed with: $e")
         }
+
+
+        log("Initialization finished")
     }
+
+
 
     private fun Context.getFragmentActivityOrThrow(): FragmentActivity {
         if (this is FragmentActivity) {
@@ -287,7 +306,7 @@ class FlutterTomtomNavigationView(
         if (areLocationPermissionsGranted()) {
             showUserLocation()
         } else {
-            println("No location permissions :(")
+            log("No location permissions :(")
         }
     }
 
@@ -588,9 +607,12 @@ class FlutterTomtomNavigationView(
         override fun onSuccess() {
             tomTomMap.hideVehicleRestrictions()
             sendNavigationStatusUpdate(NavigationStatus.READY)
+            log("Style loading succeeded sent navigation status ready")
         }
 
-        override fun onFailure(failure: LoadingStyleFailure) {}
+        override fun onFailure(failure: LoadingStyleFailure) {
+            log("Style loading failed: $failure")
+        }
     }
 
     /**
@@ -730,6 +752,7 @@ class FlutterTomtomNavigationView(
                 "  \"navigationStatus\": ${status.value}" +
                 "}"
 
+        log("Sending new navigation update: $jsonString")
         val response =
             appendNavigationUpdateStatusToJson(
                 jsonString,
@@ -760,6 +783,10 @@ class FlutterTomtomNavigationView(
 
         return newJsonObject.toString()
     }
+}
+
+ fun log(log: String) {
+     println("[FlutterTomTomNavigationView]: $log")
 }
 
 // This should represent the communication between the native code and dart plugin
