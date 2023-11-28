@@ -180,6 +180,9 @@ class FlutterTomtomNavigationView(
         publish = creationParams["publish"] as (String) -> (Unit)
 
         sendNavigationStatusUpdate(NavigationStatus.INITIALIZING)
+        initLocationProvider()
+        initRouting()
+        initNavigation()
 
         // The root view is a RelativeLayout
         relativeLayout = RelativeLayout(context)
@@ -194,12 +197,24 @@ class FlutterTomtomNavigationView(
                 activity.supportFragmentManager.findFragmentByTag("flutter_fragment")?.childFragmentManager?.beginTransaction()
                     ?.replace(it.id, mapFragment)?.commit()
                 log("MapFragment successfully attached")
-                relativeLayout.addView(mapFragmentContainer)
+
+                mapFragment.getMapAsync {
+                    log("Map is ready")
+                    tomTomMap = it
+                    sendNavigationStatusUpdate(NavigationStatus.READY)
+                    enableUserLocation()
+                    if (debug) setUpMapListeners()
+                    tomTomMap.loadStyle(
+                        StandardStyles.VEHICLE_RESTRICTIONS,
+                        styleLoadingCallback,
+                    )
+                }
             }
         } catch(e: Exception) {
             log("Attaching mapfragment failed $e")
         }
 
+        relativeLayout.addView(mapFragmentContainer)
 
 
         log("Map fragment has been setup")
@@ -228,21 +243,19 @@ class FlutterTomtomNavigationView(
         }
         relativeLayout.addView(navigationFragmentContainer)
 
-        initLocationProvider()
-        initRouting()
-        initNavigation()
+
         log("getting map")
-        mapFragment.getMapAsync {
-            log("Map is ready")
-            tomTomMap = it
-            sendNavigationStatusUpdate(NavigationStatus.READY)
-            enableUserLocation()
-            if (debug) setUpMapListeners()
-            tomTomMap.loadStyle(
-                StandardStyles.VEHICLE_RESTRICTIONS,
-                styleLoadingCallback,
-            )
-        }
+//        mapFragment.getMapAsync {
+//            log("Map is ready")
+//            tomTomMap = it
+//            sendNavigationStatusUpdate(NavigationStatus.READY)
+//            enableUserLocation()
+//            if (debug) setUpMapListeners()
+//            tomTomMap.loadStyle(
+//                StandardStyles.VEHICLE_RESTRICTIONS,
+//                styleLoadingCallback,
+//            )
+//        }
 
         log("Initialization finished")
     }
