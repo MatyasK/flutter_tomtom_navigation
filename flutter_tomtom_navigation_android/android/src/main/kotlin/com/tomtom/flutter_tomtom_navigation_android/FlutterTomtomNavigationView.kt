@@ -157,7 +157,15 @@ class FlutterTomtomNavigationView(
         )
 
         log("Camera options is ${mapOptions.cameraOptions}")
+
         apiKey = mapOptions.mapKey
+
+        if (apiKey.isEmpty()) {
+            throw IllegalArgumentException("Missing Apikey")
+        } else {
+            log("APiKey is: $apiKey")
+        }
+
         val debug = creationParams["debug"] as Boolean
 
         // Get the binary messenger from the creation params
@@ -180,12 +188,19 @@ class FlutterTomtomNavigationView(
         mapFragment = MapFragment.newInstance(mapOptions)
         mapFragmentContainer = FragmentContainerView(context)
         mapFragmentContainer.id = Random.nextInt()
-        mapFragmentContainer.doOnAttach {
-            val activity = it.context.getFragmentActivityOrThrow()
-            activity.supportFragmentManager.findFragmentByTag("flutter_fragment")?.childFragmentManager?.beginTransaction()
-                ?.replace(it.id, mapFragment)?.commit()
+        try {
+            mapFragmentContainer.doOnAttach {
+                val activity = it.context.getFragmentActivityOrThrow()
+                activity.supportFragmentManager.findFragmentByTag("flutter_fragment")?.childFragmentManager?.beginTransaction()
+                    ?.replace(it.id, mapFragment)?.commit()
+                log("MapFragment successfully attached")
+                relativeLayout.addView(mapFragmentContainer)
+            }
+        } catch(e: Exception) {
+            log("Attaching mapfragment failed $e")
         }
-        relativeLayout.addView(mapFragmentContainer)
+
+
 
         log("Map fragment has been setup")
 
@@ -216,28 +231,21 @@ class FlutterTomtomNavigationView(
         initLocationProvider()
         initRouting()
         initNavigation()
-        try {
-            log("getting map")
-                mapFragment.getMapAsync {
-                log("Map is ready")
-//                tomTomMap = it
-//                sendNavigationStatusUpdate(NavigationStatus.READY)
-//                enableUserLocation()
-//                if (debug) setUpMapListeners()
-//                tomTomMap.loadStyle(
-//                    StandardStyles.VEHICLE_RESTRICTIONS,
-//                    styleLoadingCallback,
-//                )
-            }
-            log("map loaded")
-        } catch (e: Exception) {
-            log("Getting the map fragment failed with: $e")
+        log("getting map")
+        mapFragment.getMapAsync {
+            log("Map is ready")
+            tomTomMap = it
+            sendNavigationStatusUpdate(NavigationStatus.READY)
+            enableUserLocation()
+            if (debug) setUpMapListeners()
+            tomTomMap.loadStyle(
+                StandardStyles.VEHICLE_RESTRICTIONS,
+                styleLoadingCallback,
+            )
         }
-
 
         log("Initialization finished")
     }
-
 
 
     private fun Context.getFragmentActivityOrThrow(): FragmentActivity {
@@ -785,8 +793,8 @@ class FlutterTomtomNavigationView(
     }
 }
 
- fun log(log: String) {
-     println("[FlutterTomTomNavigationView]: $log")
+fun log(log: String) {
+    println("[FlutterTomTomNavigationView]: $log")
 }
 
 // This should represent the communication between the native code and dart plugin
