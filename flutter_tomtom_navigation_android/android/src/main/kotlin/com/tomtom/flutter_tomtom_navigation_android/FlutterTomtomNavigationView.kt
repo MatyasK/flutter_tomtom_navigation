@@ -139,6 +139,8 @@ class FlutterTomtomNavigationView(
             throw IllegalArgumentException("No creation parameters provided to the FlutterTomtomNavigationView")
         }
 
+        println("Creation params is $creationParams (map options is ${creationParams["mapOptions"]}")
+
         // Get the API key from the creation params
         val mapOptionsJson = creationParams["mapOptions"] as String
         val rawMapOptions =

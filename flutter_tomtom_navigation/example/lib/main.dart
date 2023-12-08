@@ -12,7 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 /// Dart run command
 const apiKey = String.fromEnvironment(
   'apiKey',
-  defaultValue: '<fallback-tomtom-api-key>',
+  defaultValue: '<fallback-tomtom-api-keya>',
 );
 
 void main() {
